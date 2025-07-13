@@ -164,7 +164,7 @@ class StashpointFilter:
                 cap := self.stashpoint_capacity_mapping[sp_id]
                 - self.stashpoint_used_capacity_mapping.get(sp_id, 0)
             )
-            > 0
+            >= self.bag_count
         }
         self.filtered_stashpoint_ids = set(
             self.stashpoint_available_capacity_mapping.keys()

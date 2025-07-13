@@ -92,6 +92,41 @@ def test_filter_initialization(valid_params, app_context):
         assert filter_obj.pickup_dt == datetime(2024, 6, 1, 12, 0)
         assert filter_obj.bag_count == 2
 
+@patch("app.utils.filter.redis_client")
+def test_bag_count_filtering(mock_redis, app_context):
+    """Test that stashpoints are filtered based on bag count requirement"""
+    mock_redis.geosearch.return_value = [("1", 2.5), ("2", 3.1), ("3", 4.0)]
+    
+    # Test with bag_count = 3
+    params = {
+        "lat": 51.5,
+        "lng": -0.1,
+        "radius_km": 10,
+        "dropoff_dt": datetime(2024, 6, 1, 10, 0),
+        "pickup_dt": datetime(2024, 6, 1, 12, 0),
+        "bag_count": 3,
+    }
+    
+    # Mock the database operations but NOT calculate_available_capacity
+    with patch.object(StashpointFilter, 'filter_by_opening_time'), \
+         patch.object(StashpointFilter, 'get_stashpoint_used_capacity_mapping'):
+        
+        filter_obj = StashpointFilter(**params)
+        
+        # Manually set up the filter's internal state to test bag count filtering
+        filter_obj.stashpoint_capacity_mapping = {"1": 10, "2": 8, "3": 15}
+        filter_obj.stashpoint_used_capacity_mapping = {"1": 5, "2": 6, "3": 10}
+        
+        # Call the method that uses the new bag count logic
+        filter_obj.calculate_available_capacity()
+        
+        # Should only include stashpoints with enough capacity for 3 bags
+        assert "1" in filter_obj.stashpoint_available_capacity_mapping  # 10 - 5 = 5 >= 3 ✓
+        assert "3" in filter_obj.stashpoint_available_capacity_mapping  # 15 - 10 = 5 >= 3 ✓
+        assert "2" not in filter_obj.stashpoint_available_capacity_mapping  # 8 - 6 = 2 < 3 ✗
+        assert filter_obj.stashpoint_available_capacity_mapping["1"] == 5
+        assert filter_obj.stashpoint_available_capacity_mapping["3"] == 5
+
 @pytest.mark.integration
 def test_stashpoint_filter_integration(app_context):
     """Integration test with real database"""
