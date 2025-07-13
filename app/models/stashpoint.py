@@ -1,8 +1,6 @@
 import uuid
 from datetime import datetime
 from geoalchemy2.types import Geography
-from sqlalchemy.ext.hybrid import hybrid_method
-from sqlalchemy import func
 from app import db
 
 

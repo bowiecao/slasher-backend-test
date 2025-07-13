@@ -23,5 +23,5 @@ ENV PYTHONUNBUFFERED=1
 # Expose port
 EXPOSE 5000
 
-# Command to run the application
-CMD ["flask", "run", "--host=0.0.0.0"] 
+# Production command (matches docker-compose)
+CMD ["gunicorn", "-w", "8", "-b", "0.0.0.0:5000", "app:create_app()"] 

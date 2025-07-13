@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from sqlalchemy.ext.hybrid import hybrid_property
 from app import db
 
 
@@ -9,8 +8,12 @@ class Booking(db.Model):
 
     __tablename__ = "bookings"
 
-    id = db.Column(db.String, primary_key=True, default=lambda: uuid.uuid4().hex)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    id = db.Column(
+        db.String, primary_key=True, default=lambda: uuid.uuid4().hex
+    )
+    created_at = db.Column(
+        db.DateTime, nullable=False, default=datetime.utcnow
+    )
 
     # Booking details
     bag_count = db.Column(db.Integer, nullable=False, default=1)

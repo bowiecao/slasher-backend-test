@@ -4,13 +4,15 @@ services:
   app:
     build: .
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@db/stasher_interview
       - TEST_DATABASE_URL=postgresql://postgres:postgres@db/stasher_interview_test
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
+      - redis
     volumes:
       - .:/app
     command: >
@@ -29,8 +31,14 @@ services:
         # Run the application directly - let it create tables
         python -c 'from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()' &&
         
-        # Run the application
-        flask run --host=0.0.0.0
+        # Seed the database with test data
+        python seed_test_data.py &&
+
+        # Sync stashpoints to Redis
+        python cron.py &&
+
+        # Run the application with Gunicorn (8 workers)
+        gunicorn -w 8 -b 0.0.0.0:5000 'app:create_app()'
       "
 
   db:
@@ -52,6 +60,25 @@ services:
       postgres
         -c shared_preload_libraries=pg_stat_statements
         -c pg_stat_statements.track=all
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    depends_on:
+      - app
+      - db
+      - redis
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db/stasher_interview
+      - REDIS_URL=redis://redis:6379/0
 
 volumes:
   postgres_data:
