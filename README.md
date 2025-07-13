@@ -17,6 +17,8 @@ backend-test/
 ├── 📄 requirements.txt              # Python dependencies
 ├── 📄 docker-compose.yml           # Docker orchestration
 ├── 📄 Dockerfile                    # Container definition
+├── 📄 Dockerfile.cron               # Cron container definition
+├── 📄 cron.py                       # Data sync script
 └── 📄 README.md                    # This file
 ```
 
